@@ -47,10 +47,12 @@ namespace 温度监测程序
         public Form1()
         {
             InitializeComponent();
-            ckCbx.SelectedIndex = 4;
+            ckCbx.SelectedIndex = 14;
+
             string serverIp = "172.22.50.3";
             int serverPort = 49200;
             remoteEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
+
             tool = new ModbusTools();
             exhibit = new ModbusDataExhibit();
             excelHelp = new ExcelHelpClass();
@@ -58,11 +60,13 @@ namespace 温度监测程序
             chart1 = new Chart();
             chartData2 = new ChartClass(21);
             udpClient = new UdpClient();
+
             timerReadData.Elapsed += TimerReadMethod;
             timerReadData.AutoReset = true;
+
             timerSendData.Elapsed += TimerSendMethod;
             timerSendData.AutoReset = true;
-            timerSendData.Enabled = true;
+
             ReplyDelegate = ResponseData;
         }
 
@@ -82,6 +86,7 @@ namespace 温度监测程序
             }
             tool.startUpMethod(this, 1);
             timerReadData.Enabled = true;
+            timerSendData.Enabled = true;
         }
         public void readMethod()
         {
@@ -283,6 +288,9 @@ namespace 温度监测程序
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            closeModel();
+            timersStop();
+            // tool.closurePort();
             Application.Exit();
         }
 
@@ -295,8 +303,11 @@ namespace 温度监测程序
         {
             if (button1.Text == "停止")
             {
-                timerReadData.Enabled = false;
+                timersStop();
+                tool.closurePort();
                 button1.Text = "开始";
+                labelHumidityCH1.Text = "0.0";
+                labelTemperatureCH1.Text = "0.0";
             }
             else
             {
@@ -312,5 +323,38 @@ namespace 温度监测程序
             lbbbh.Text = $"V {Assembly.GetExecutingAssembly().GetName().Version}";
             label7.Text = $"{tool.getStationName()}{Environment.MachineName.Substring(Math.Max(0, Environment.MachineName.Length - 6), 6)}";
         }
+
+        private void timersStop()
+        {
+            timerReadData.Enabled = false;
+            timerSendData.Enabled = false;
+        }
+
+        public void closeModel()
+        {
+            try
+            {
+                if (tool != null)
+                {
+                    tool.destroyThread();
+                }
+                /*threadStateData = false;
+                if (childThread != null)
+                {
+                    childThread.Abort();
+                    childThread = null;
+                }
+                if (excelHelp != null)
+                {
+                    excelHelp.AppendData(WriteWorkbook, saveFileDialog, tableData);
+                }
+                timerCom.Enabled = false;*/
+            }
+            catch (Exception)
+            {
+                Environment.Exit(0);
+            }
+        }
+
     }
 }

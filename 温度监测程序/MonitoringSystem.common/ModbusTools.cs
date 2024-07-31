@@ -72,22 +72,17 @@ namespace 温度监测程序.MonitoringSystem.common
         public NetworkInfo GetLocalNetworkInfo()
         {
             NetworkInfo networkInfo = new NetworkInfo();
-            // 遍历所有网络接口
             foreach (NetworkInterface networkInterface in NetworkInterface.GetAllNetworkInterfaces())
             {
-                // 仅处理无线和以太网接口
                 if (networkInterface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ||
                     networkInterface.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
                 {
-                    // 遍历每个接口的单播IP地址
                     foreach (UnicastIPAddressInformation ip in networkInterface.GetIPProperties().UnicastAddresses)
                     {
-                        // 仅处理IPv4地址
                         if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         {
                             networkInfo.IpAddress = ip.Address.ToString();
                             networkInfo.subnetMask = ip.IPv4Mask.ToString();
-                            // 检查是否存在默认网关
                             if (networkInterface.GetIPProperties().GatewayAddresses.Count > 0)
                             {
                                 networkInfo.defaultGateway = networkInterface.GetIPProperties().GatewayAddresses[0].Address.ToString();
@@ -96,7 +91,6 @@ namespace 温度监测程序.MonitoringSystem.common
                         }
                     }
                 }
-                // 如果已经找到IP地址，跳出循环
                 if (!networkInfo.IpAddress.Equals("0.0.0.0"))
                 {
                     break;
@@ -205,7 +199,7 @@ namespace 温度监测程序.MonitoringSystem.common
             }
         }*/
 
-        public void TcpClose()
+        /*public void TcpClose()
         {
             if (tcpClient != null)
             {
@@ -216,7 +210,7 @@ namespace 温度监测程序.MonitoringSystem.common
                 tcpClient = null;
                 master = null;
             }
-        }
+        }*/
 
         public bool AddListWrite(ModbusClass data)
         {
@@ -224,13 +218,13 @@ namespace 温度监测程序.MonitoringSystem.common
             return true;
         }
 
-        public void WriteClear()
+        /*public void WriteClear()
         {
             while (!MDataWrite.IsEmpty)
             {
                 MDataWrite.TryDequeue(out var _);
             }
-        }
+        }*/
 
         public bool AddListRead(ModbusClass data)
         {
@@ -238,13 +232,13 @@ namespace 温度监测程序.MonitoringSystem.common
             return true;
         }
 
-        public void ReadClear()
+        /*public void ReadClear()
         {
             while (!MDataRead.IsEmpty)
             {
                 MDataRead.TryDequeue(out var _);
             }
-        }
+        }*/
 
         public int ReadCount()
         {
@@ -388,9 +382,9 @@ namespace 温度监测程序.MonitoringSystem.common
         public void destroyThread()
         {
             threadStateData = false;
-            WriteClear();
-            ReadClear();
-            TcpClose();
+            // WriteClear();
+            // ReadClear();
+            // TcpClose();
             closurePort();
             if (childThread != null)
             {

@@ -135,7 +135,12 @@
             "COM12",
             "COM13",
             "COM14",
-            "COM15"});
+            "COM15",
+            "COM16",
+            "COM17",
+            "COM18",
+            "COM19",
+            "COM20"});
             this.ckCbx.Location = new System.Drawing.Point(144, 10);
             this.ckCbx.Name = "ckCbx";
             this.ckCbx.Size = new System.Drawing.Size(93, 27);
