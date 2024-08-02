@@ -69,7 +69,15 @@ namespace 温度监测程序
 
             ReplyDelegate = ResponseData;
         }
+        public float GetTemperature()
+        {
+            return fTemperature;
+        }
 
+        public float GetHumidity()
+        {
+            return fHumidity;
+        }
         private void startGetTempAndHumi()
         {
             portName = ckCbx.SelectedItem.ToString();
@@ -319,6 +327,9 @@ namespace 温度监测程序
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            Form2 form2 = new Form2(this);
+            form2.Show();
+
             startGetTempAndHumi();
             lbbbh.Text = $"V {Assembly.GetExecutingAssembly().GetName().Version}";
             label7.Text = $"{tool.getStationName()}{Environment.MachineName.Substring(Math.Max(0, Environment.MachineName.Length - 6), 6)}";

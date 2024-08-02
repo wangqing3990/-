@@ -17,6 +17,8 @@ namespace 温度监测程序
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
+
         }
+
     }
 }
