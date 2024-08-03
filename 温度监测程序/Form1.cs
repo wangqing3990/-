@@ -43,11 +43,13 @@ namespace 温度监测程序
         private Chart chart1;
         private Chart chart2;
         private Thread sendThread;
+        private Point mouseDownLocation;
 
         public Form1()
         {
             InitializeComponent();
             ckCbx.SelectedIndex = 14;
+            AddMouseEventHandlers(this);
 
             string serverIp = "172.22.50.3";
             int serverPort = 49200;
@@ -349,17 +351,6 @@ namespace 温度监测程序
                 {
                     tool.destroyThread();
                 }
-                /*threadStateData = false;
-                if (childThread != null)
-                {
-                    childThread.Abort();
-                    childThread = null;
-                }
-                if (excelHelp != null)
-                {
-                    excelHelp.AppendData(WriteWorkbook, saveFileDialog, tableData);
-                }
-                timerCom.Enabled = false;*/
             }
             catch (Exception)
             {
@@ -367,5 +358,54 @@ namespace 温度监测程序
             }
         }
 
+        private void label10_Click(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Minimized;
+        }
+        private void label10_MouseHover(object sender, EventArgs e)
+        {
+            label10.BackColor = Color.PaleTurquoise;
+        }
+        private void label10_MouseLeave(object sender, EventArgs e)
+        {
+            label10.BackColor = Color.White;
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            using (Pen pen = new Pen(Color.Black, 1))
+            {
+                e.Graphics.DrawRectangle(pen, new Rectangle(0, 0, ClientSize.Width - 1, ClientSize.Height - 1));
+            }
+        }
+
+        private void AddMouseEventHandlers(Control control)
+        {
+            control.MouseDown += Form_MouseDown;
+            control.MouseMove += Form_MouseMove;
+
+            foreach (Control childControl in control.Controls)
+            {
+                AddMouseEventHandlers(childControl);
+            }
+        }
+        private void Form_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                // 记录鼠标按下时的位置
+                mouseDownLocation = e.Location;
+            }
+        }
+
+        private void Form_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                // 移动窗体
+                Left += e.X - mouseDownLocation.X;
+                Top += e.Y - mouseDownLocation.Y;
+            }
+        }
     }
 }
