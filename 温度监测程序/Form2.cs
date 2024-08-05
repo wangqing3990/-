@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -10,6 +11,8 @@ namespace 温度监测程序
         private Form1 form1;
         private float temperature;
         private float humidity;
+        private Timer getTempAndHumi;
+
         public Form2(Form1 form1)
         {
             InitializeComponent();
@@ -22,6 +25,7 @@ namespace 温度监测程序
             TopMost = true;
             // 设置窗体大小和位置
             SetTaskbarRect();
+            setReg();
 
             Load += new EventHandler(Form2_Load);
             Shown += new EventHandler(Form2_Shown);
@@ -31,31 +35,19 @@ namespace 温度监测程序
             topMostTimer.Interval = 500; // 每0.5秒检查一次
             topMostTimer.Tick += new EventHandler(TopMostTimer_Tick);
             topMostTimer.Start();
+
+            getTempAndHumi = new Timer();
+            getTempAndHumi.Interval = 200;
+            getTempAndHumi.Tick += getTempAndHumi_Tick;
+
         }
         private void Form2_Load(object sender, EventArgs e)
         {
-            temperature = form1.GetTemperature();
-            humidity = form1.GetHumidity();
+            // temperature = form1.GetTemperature();
+            // humidity = form1.GetHumidity();
             TopMost = true;
-            label1.Text = (temperature == 0) ? "0.0" : temperature.ToString();
-            label3.Text = (humidity == 0) ? "0.0" : humidity.ToString();
-            if (temperature <= 40)
-            {
-                label1.ForeColor = Color.DarkGreen;
-            }
-            else
-            {
-                label1.ForeColor = Color.Red;
-            }
+            getTempAndHumi.Start();
 
-            if (humidity <= 70)
-            {
-                label3.ForeColor = Color.DarkGreen;
-            }
-            else
-            {
-                label3.ForeColor = Color.Red;
-            }
         }
 
         private void Form2_Shown(object sender, EventArgs e)
@@ -74,6 +66,30 @@ namespace 温度监测程序
             SetTaskbarRect();
         }
 
+        private void getTempAndHumi_Tick(object sender, EventArgs e)
+        {
+            temperature = form1.GetTemperature();
+            humidity = form1.GetHumidity();
+            if (temperature <= 40)
+            {
+                label1.ForeColor = Color.DarkGreen;
+            }
+            else
+            {
+                label1.ForeColor = Color.Red;
+            }
+
+            if (humidity <= 70)
+            {
+                label3.ForeColor = Color.DarkGreen;
+            }
+            else
+            {
+                label3.ForeColor = Color.Red;
+            }
+            label1.Text = (temperature == 0) ? "0.0" : temperature.ToString();
+            label3.Text = (humidity == 0) ? "0.0" : humidity.ToString();
+        }
         private void SetTaskbarRect()
         {
             Screen screen = Screen.PrimaryScreen;
@@ -89,6 +105,14 @@ namespace 温度监测程序
 
             StartPosition = FormStartPosition.Manual;
             Bounds = taskbarRect;
+        }
+
+        private void setReg()
+        {
+            //注册表设置开机自启动
+            RegistryKey registry = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+            registry.SetValue("温湿度监测程序", Application.ExecutablePath);
+            registry.Close();
         }
     }
 }
