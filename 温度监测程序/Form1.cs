@@ -1,7 +1,11 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.IO.Ports;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -23,7 +27,9 @@ namespace 温度监测程序
         private System.Timers.Timer timerReadData = new System.Timers.Timer(200.0);
         private System.Timers.Timer timerCom = new System.Timers.Timer(2000.0);
         private System.Timers.Timer timerSaveData = new System.Timers.Timer();
-        private System.Timers.Timer timerSendData = new System.Timers.Timer(500.0);
+        private System.Timers.Timer timerSendData = new System.Timers.Timer(2000);
+        private System.Timers.Timer timerUpdate = new System.Timers.Timer(5000);
+        private Thread threadUpdate;
         public delegateReply ReplyDelegate;
         private string portName;
         private int baudRate;
@@ -48,8 +54,12 @@ namespace 温度监测程序
         public Form1()
         {
             InitializeComponent();
-            ckCbx.SelectedIndex = 14;
+            setReg();
+            loadComPorts();
             AddMouseEventHandlers(this);
+
+            notifyIcon1.Icon = Icon;
+            notifyIcon1.Visible = true;
 
             string serverIp = "172.22.50.3";
             int serverPort = 49200;
@@ -62,6 +72,7 @@ namespace 温度监测程序
             chart1 = new Chart();
             chartData2 = new ChartClass(21);
             udpClient = new UdpClient();
+            threadUpdate = new Thread(ThreadUpdateMethod);
 
             timerReadData.Elapsed += TimerReadMethod;
             timerReadData.AutoReset = true;
@@ -71,11 +82,16 @@ namespace 温度监测程序
 
             ReplyDelegate = ResponseData;
         }
+        private void ThreadUpdateMethod()
+        {
+            timerUpdate.Elapsed += TimerUpdateMethod;
+            timerUpdate.AutoReset = true;
+            timerUpdate.Enabled = true;
+        }
         public float GetTemperature()
         {
             return fTemperature;
         }
-
         public float GetHumidity()
         {
             return fHumidity;
@@ -97,6 +113,16 @@ namespace 温度监测程序
             tool.startUpMethod(this, 1);
             timerReadData.Enabled = true;
             timerSendData.Enabled = true;
+        }
+
+        private void loadComPorts()
+        {
+            string[] ports = SerialPort.GetPortNames();
+            ckCbx.Items.AddRange(ports);
+            if (ports.Length > 0)
+            {
+                ckCbx.SelectedIndex = 0;
+            }
         }
         public void readMethod()
         {
@@ -124,12 +150,11 @@ namespace 温度监测程序
                 readMethod();
             });
         }
-
         public void sendMethod()
         {
-            string message = $"温度:{string.Format("{0:f1}", fTemperature)}℃ 湿度:{string.Format("{0:f1}", fHumidity)}％";
+            string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", fTemperature)}℃,{string.Format("{0:f1}", fHumidity)}％";
             byte[] data = Encoding.UTF8.GetBytes(message);
-            // MessageBox.Show(message+data);
+            // MessageBox.Show(data.Length.ToString());
             try
             {
                 udpClient.Send(data, data.Length, remoteEndPoint);
@@ -144,6 +169,56 @@ namespace 温度监测程序
             {
                 sendMethod();
             });
+        }
+        private string updateServerPath = @"\\172.22.50.3\2ydata\THupdate\";
+        private void TimerUpdateMethod(object sender, ElapsedEventArgs e)
+        {
+            PingReply pr = new Ping().Send("172.22.50.3", 5000);
+            if (pr.Status == IPStatus.Success)
+            {
+                try
+                {
+                    string latestVersionPath = Path.Combine(updateServerPath, "version.txt");
+                    string latestVersionStr = File.ReadAllText(latestVersionPath);
+
+                    Version latestVersion = new Version(latestVersionStr);
+                    Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+                    if (latestVersion > currentVersion)
+                    {
+                        ProcessStartInfo psi = new ProcessStartInfo
+                        {
+                            FileName = "UpdaterHelper.exe",
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            RedirectStandardOutput = false,
+                            RedirectStandardError = false
+                        };
+
+                        Process updaterProcess = new Process { StartInfo = psi };
+                        updaterProcess.Start();
+
+                        Invoke(new Action(() =>
+                            {
+                                notifyIcon1.Dispose();
+                                closeModel();
+                                timersStop();
+                                Application.Exit();
+                                Dispose();
+                            }
+                        ));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // MessageBox.Show($"检测更新出错：{ex.Message}");
+                }
+            }
+            else
+            {
+                // MessageBox.Show("与中央服务器连接失败！");
+                return;
+            }
         }
         private void ThreadSafe(MethodInvoker method)
         {
@@ -166,12 +241,10 @@ namespace 温度监测程序
         {
             DisplayInstruction(ir, code, StartRegister, dataSon, null, LooktextBox);
         }
-
         public void DisplayInstruction(bool ir, byte code, ushort StartRegister, ushort[] data)
         {
             DisplayInstruction(ir, code, StartRegister, 0, data, LooktextBox);
         }
-
         public void DisplayInstruction(string msg, bool ir)
         {
             ThreadSafe(delegate
@@ -179,7 +252,6 @@ namespace 温度监测程序
                 exhibit.AddTextBox(LooktextBox, msg, ir ? "发" : "收", ir ? Color.LightSkyBlue : Color.MediumSeaGreen);
             });
         }
-
         public void DisplayInstruction(bool ir, byte code, ushort StartRegister, ushort dataSon, ushort[] data, RichTextBox LookTextBox)
         {
             string RMdata = string.Empty;
@@ -218,7 +290,6 @@ namespace 温度监测程序
                 exhibit.AddTextBox(LookTextBox, RMdata, ir ? "发" : "收", ir ? Color.LightSkyBlue : Color.MediumSeaGreen);
             });
         }
-
         private float RegValue2Temp(ushort nValue)
         {
             float fValue = 0f;
@@ -226,7 +297,6 @@ namespace 温度监测程序
             fValue = ((fValue == 0f) ? ((float)(int)nValue) : ((float)(-(nValue - 10000))));
             return fValue / 10f;
         }
-
         public void SansResponseData(ushort[] data, byte code, int seat, object[] setAs, ushort startRegister, string msg)
         {
             try
@@ -244,7 +314,6 @@ namespace 温度监测程序
             {
             }
         }
-
         public void ResponseData(ushort[] data, byte code, int seat, object[] setAs, ushort startRegister, string msg)
         {
             switch (seat)
@@ -295,20 +364,24 @@ namespace 温度监测程序
                     break;
             }
         }
-
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            closeModel();
-            timersStop();
-            // tool.closurePort();
+            try
+            {
+                closeModel();
+                timersStop();
+                threadUpdate.Abort();
+                // tool.closurePort();
+            }
+            catch (Exception exception)
+            {
+            }
             Application.Exit();
         }
-
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             Dispose();
         }
-
         private void button1_Click(object sender, EventArgs e)
         {
             if (button1.Text == "停止")
@@ -326,23 +399,26 @@ namespace 温度监测程序
             }
 
         }
-
         private void Form1_Load(object sender, EventArgs e)
         {
+            WindowState = FormWindowState.Minimized;
+            threadUpdate.Start();
+
             Form2 form2 = new Form2(this);
             form2.Show();
 
             startGetTempAndHumi();
+            deleteTHUpdaterHelper();
+
             lbbbh.Text = $"V {Assembly.GetExecutingAssembly().GetName().Version}";
             label7.Text = $"{tool.getStationName()}{Environment.MachineName.Substring(Math.Max(0, Environment.MachineName.Length - 6), 6)}";
         }
-
         private void timersStop()
         {
+            timerUpdate.Enabled = false;
             timerReadData.Enabled = false;
             timerSendData.Enabled = false;
         }
-
         public void closeModel()
         {
             try
@@ -357,7 +433,6 @@ namespace 温度监测程序
                 Environment.Exit(0);
             }
         }
-
         private void label10_Click(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Minimized;
@@ -370,7 +445,6 @@ namespace 温度监测程序
         {
             label10.BackColor = Color.White;
         }
-
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             using (Pen pen = new Pen(Color.Black, 1))
@@ -378,7 +452,6 @@ namespace 温度监测程序
                 e.Graphics.DrawRectangle(pen, new Rectangle(0, 0, ClientSize.Width - 1, ClientSize.Height - 1));
             }
         }
-
         private void AddMouseEventHandlers(Control control)
         {
             control.MouseDown += Form_MouseDown;
@@ -397,7 +470,6 @@ namespace 温度监测程序
                 mouseDownLocation = e.Location;
             }
         }
-
         private void Form_MouseMove(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -405,6 +477,28 @@ namespace 温度监测程序
                 // 移动窗体
                 Left += e.X - mouseDownLocation.X;
                 Top += e.Y - mouseDownLocation.Y;
+            }
+        }
+        private void setReg()
+        {
+            //注册表设置开机自启动
+            RegistryKey registry = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+            registry.SetValue("温湿度监测程序", Application.ExecutablePath);
+            registry.Close();
+        }
+        private void notifyIcon1_Click(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Normal;
+            ShowInTaskbar = true;
+        }
+        private void deleteTHUpdaterHelper()
+        {
+            string sourceFileName = @"C:\温湿度监测程序\THUpdaterHelper1.exe";
+            string targetFileName = @"C:\温湿度监测程序\THUpdaterHelper.exe";
+            if (File.Exists(sourceFileName))
+            {
+                File.Delete(targetFileName);
+                File.Move(sourceFileName, targetFileName);
             }
         }
     }

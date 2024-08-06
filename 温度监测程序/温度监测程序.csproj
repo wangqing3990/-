@@ -96,7 +96,6 @@
     <Compile Include="MonitoringSystem.common\ExcelHelpClass.cs" />
     <Compile Include="MonitoringSystem.common\ModbusDataExhibit.cs" />
     <Compile Include="MonitoringSystem.common\ModbusTools.cs" />
-    <Compile Include="MonitoringSystem.common\UdpClientHelper.cs" />
     <Compile Include="MonitoringSystem.pojo\ChartClass.cs" />
     <Compile Include="MonitoringSystem.pojo\ModbusClass.cs" />
     <Compile Include="Program.cs" />

@@ -25,7 +25,6 @@ namespace 温度监测程序
             TopMost = true;
             // 设置窗体大小和位置
             SetTaskbarRect();
-            setReg();
 
             Load += new EventHandler(Form2_Load);
             Shown += new EventHandler(Form2_Shown);
@@ -107,12 +106,6 @@ namespace 温度监测程序
             Bounds = taskbarRect;
         }
 
-        private void setReg()
-        {
-            //注册表设置开机自启动
-            RegistryKey registry = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-            registry.SetValue("温湿度监测程序", Application.ExecutablePath);
-            registry.Close();
-        }
+        
     }
 }
