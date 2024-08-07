@@ -157,8 +157,9 @@ namespace 温度监测程序
         //发送数据
         public void sendMethod()
         {
+            string message = $"{string.Format("{0:f1}", new Random().Next(10, 50))},{string.Format("{0:f1}", new Random().Next(30, 80))}";
             // string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", new Random().Next(10, 50))},{string.Format("{0:f1}", new Random().Next(30, 80))}";
-            string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", fTemperature)},{string.Format("{0:f1}", fHumidity)}";
+            // string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", fTemperature)},{string.Format("{0:f1}", fHumidity)}";
 
             byte[] data = Encoding.UTF8.GetBytes(message);
             // MessageBox.Show(message);
