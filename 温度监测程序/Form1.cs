@@ -62,7 +62,7 @@ namespace 温度监测程序
             notifyIcon1.Visible = true;
 
             string serverIp = "172.22.50.3";
-            int serverPort = 49200;
+            int serverPort = 26730;
             remoteEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
 
             tool = new ModbusTools();
@@ -96,9 +96,13 @@ namespace 温度监测程序
         {
             return fHumidity;
         }
+        //开始获取温湿度
         private void startGetTempAndHumi()
         {
-            portName = ckCbx.SelectedItem.ToString();
+            if (ckCbx.SelectedItem != null)
+            {
+                portName = ckCbx.SelectedItem.ToString();
+            }
             baudRate = 9600;
             try
             {
@@ -108,13 +112,13 @@ namespace 温度监测程序
             {
                 MessageBox.Show($"请检查串口: {portName} 是否被占用。");
                 button1.Text = "开始";
-                return;
+                // return;
             }
             tool.startUpMethod(this, 1);
             timerReadData.Enabled = true;
             timerSendData.Enabled = true;
         }
-
+        //读取所有已连接的端口
         private void loadComPorts()
         {
             string[] ports = SerialPort.GetPortNames();
@@ -150,11 +154,14 @@ namespace 温度监测程序
                 readMethod();
             });
         }
+        //发送数据
         public void sendMethod()
         {
-            string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", fTemperature)}℃,{string.Format("{0:f1}", fHumidity)}％";
+            // string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", new Random().Next(10, 50))},{string.Format("{0:f1}", new Random().Next(30, 80))}";
+            string message = $"{tool.GetLocalNetworkInfo().IpAddress},{string.Format("{0:f1}", fTemperature)},{string.Format("{0:f1}", fHumidity)}";
+
             byte[] data = Encoding.UTF8.GetBytes(message);
-            // MessageBox.Show(data.Length.ToString());
+            // MessageBox.Show(message);
             try
             {
                 udpClient.Send(data, data.Length, remoteEndPoint);
@@ -170,6 +177,7 @@ namespace 温度监测程序
                 sendMethod();
             });
         }
+        //检查版本号
         private string updateServerPath = @"\\172.22.50.3\2ydata\THupdate\";
         private void TimerUpdateMethod(object sender, ElapsedEventArgs e)
         {
@@ -211,13 +219,7 @@ namespace 温度监测程序
                 }
                 catch (Exception ex)
                 {
-                    // MessageBox.Show($"检测更新出错：{ex.Message}");
                 }
-            }
-            else
-            {
-                // MessageBox.Show("与中央服务器连接失败！");
-                return;
             }
         }
         private void ThreadSafe(MethodInvoker method)
@@ -382,6 +384,7 @@ namespace 温度监测程序
         {
             Dispose();
         }
+        //按钮事件
         private void button1_Click(object sender, EventArgs e)
         {
             if (button1.Text == "停止")
@@ -433,6 +436,7 @@ namespace 温度监测程序
                 Environment.Exit(0);
             }
         }
+        //关闭按钮
         private void label10_Click(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Minimized;
@@ -445,6 +449,7 @@ namespace 温度监测程序
         {
             label10.BackColor = Color.White;
         }
+        //窗体黑边
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             using (Pen pen = new Pen(Color.Black, 1))
@@ -479,6 +484,7 @@ namespace 温度监测程序
                 Top += e.Y - mouseDownLocation.Y;
             }
         }
+        //注册表
         private void setReg()
         {
             //注册表设置开机自启动
@@ -486,6 +492,7 @@ namespace 温度监测程序
             registry.SetValue("温湿度监测程序", Application.ExecutablePath);
             registry.Close();
         }
+        //通知图标点击事件
         private void notifyIcon1_Click(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Normal;
