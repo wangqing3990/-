@@ -28,7 +28,6 @@ namespace 温度监测程序
         private System.Timers.Timer timerSaveData = new System.Timers.Timer();
         private System.Timers.Timer timerSendData = new System.Timers.Timer(2000);
         private System.Timers.Timer timerUpdateClient = new System.Timers.Timer(5000);
-        private System.Timers.Timer timerUpdateTime = new System.Timers.Timer(30000);
         // private Timer timerUpdateTime;
         private Thread threadUpdate;
         public delegateReply ReplyDelegate;
@@ -81,32 +80,7 @@ namespace 温度监测程序
             timerSendData.Elapsed += TimerSendMethod;
             timerSendData.AutoReset = true;
 
-            timerUpdateTime.Elapsed += TimerUpdateTime_Elapsed;
-            timerUpdateTime.AutoReset = true;
-            timerUpdateTime.Enabled = true;
-
-            TimeSpan timeToGo = DateTime.Today.AddDays(1).AddHours(4) - DateTime.Now;
-            if (timeToGo < TimeSpan.Zero)
-            {
-                timeToGo = TimeSpan.Zero;
-            }
-            // MessageBox.Show($"定时器将在 {DateTime.Now.Add(timeToGo)} 触发。");
-            // timerUpdateTime = new Timer(ExecuteTask, null, timeToGo, TimeSpan.FromDays(1));
-            // MessageBox.Show("定时任务已启动。");
-
             ReplyDelegate = ResponseData;
-        }
-
-        private void TimerUpdateTime_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => ExecuteTask()));
-            }
-            else
-            {
-                ExecuteTask();
-            }
         }
 
         private void ThreadUpdateMethod()
@@ -248,7 +222,7 @@ namespace 温度监测程序
             });
         }
         //检查版本号
-        private string updateServerPath = @"\\172.22.50.3\2ydata\THupdate\";
+        private string updateServerPath = @"\\172.22.100.13\2ydata\THupdate\";
         private void ThreadSafe(MethodInvoker method)
         {
             try
@@ -533,85 +507,6 @@ namespace 温度监测程序
             {
                 File.Delete(targetFileName);
                 File.Move(sourceFileName, targetFileName);
-            }
-        }
-        private void ExecuteTask()
-        {
-            try
-            {
-                MessageBox.Show("执行任务：获取远程时间并同步本地时间。");
-                DateTime remoteTime = GetRemoteTime();
-                MessageBox.Show(remoteTime.ToString());
-                if (remoteTime != DateTime.MinValue)
-                {
-                    SyncLocalTime(remoteTime);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"执行任务失败: {ex.Message}");
-            }
-            
-        }
-
-        private DateTime GetRemoteTime()
-        {
-            // 示例NTP服务器
-            const string ntpServer = "172.22.50.3";
-            try
-            {
-                using (UdpClient udpClient = new UdpClient(ntpServer, 123))
-                {
-                    byte[] requestData = new byte[48];
-                    requestData[0] = 0x1B; // NTP请求头
-
-                    udpClient.Send(requestData, requestData.Length);
-
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] responseData = udpClient.Receive(ref endPoint);
-
-                    // 解析NTP时间戳
-                    ulong intPart = BitConverter.ToUInt32(responseData, 43);
-                    ulong fracPart = BitConverter.ToUInt32(responseData, 47);
-
-                    DateTime ntpDateTime = new DateTime(1900, 1, 1).AddSeconds(intPart);
-                    ntpDateTime = ntpDateTime.AddTicks((long)((fracPart * TimeSpan.TicksPerSecond) / 0xFFFFFFFFUL));
-
-                    MessageBox.Show($"获取远程时间成功！");
-                    return ntpDateTime.ToLocalTime();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"获取远程时间失败: {ex.Message}");
-                return DateTime.MinValue;
-            }
-        }
-
-        private void SyncLocalTime(DateTime newTime)
-        {
-            try
-            {
-                MessageBox.Show("开始更新本地时间");
-                // 更新本地时间（需要管理员权限）
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = $"/C date {newTime:MM-dd-yy} & time {newTime:HH:mm:ss}",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (var process = Process.Start(startInfo))
-                {
-                    process.WaitForExit();
-                }
-                MessageBox.Show("本地时间已同步。");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"同步本地时间失败: {ex.Message}");
             }
         }
     }
