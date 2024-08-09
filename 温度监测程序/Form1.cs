@@ -49,6 +49,7 @@ namespace 温度监测程序
         private Chart chart1;
         private Chart chart2;
         private Point mouseDownLocation;
+        private string updateServerPath = @"\\172.22.100.13\2ydata\THupdate\";
 
 
         public Form1()
@@ -91,7 +92,7 @@ namespace 温度监测程序
         }
         private void TimerUpdateClientMethod(object sender, ElapsedEventArgs e)
         {
-            PingReply pr = new Ping().Send("172.22.50.3", 5000);
+            PingReply pr = new Ping().Send("172.22.100.13", 5000);
             if (pr.Status == IPStatus.Success)
             {
                 try
@@ -222,7 +223,7 @@ namespace 温度监测程序
             });
         }
         //检查版本号
-        private string updateServerPath = @"\\172.22.100.13\2ydata\THupdate\";
+        
         private void ThreadSafe(MethodInvoker method)
         {
             try
