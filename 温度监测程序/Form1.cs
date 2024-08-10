@@ -28,8 +28,10 @@ namespace 温度监测程序
         private System.Timers.Timer timerSaveData = new System.Timers.Timer();
         private System.Timers.Timer timerSendData = new System.Timers.Timer(2000);
         private System.Timers.Timer timerUpdateClient = new System.Timers.Timer(5000);
-        // private Timer timerUpdateTime;
-        private Thread threadUpdate;
+        private System.Timers.Timer timerUpdateTime = new System.Timers.Timer(10000);
+        private const string ntpServer = "172.22.100.13";
+        private const int ntpPort = 123;
+        // private Thread threadUpdate;
         public delegateReply ReplyDelegate;
         private string portName;
         private int baudRate;
@@ -73,7 +75,6 @@ namespace 温度监测程序
             chart1 = new Chart();
             chartData2 = new ChartClass(21);
             udpClient = new UdpClient();
-            threadUpdate = new Thread(ThreadUpdateMethod);
 
             timerReadData.Elapsed += TimerReadMethod;
             timerReadData.AutoReset = true;
@@ -81,57 +82,70 @@ namespace 温度监测程序
             timerSendData.Elapsed += TimerSendMethod;
             timerSendData.AutoReset = true;
 
-            ReplyDelegate = ResponseData;
-        }
-
-        private void ThreadUpdateMethod()
-        {
             timerUpdateClient.Elapsed += TimerUpdateClientMethod;
             timerUpdateClient.AutoReset = true;
             timerUpdateClient.Enabled = true;
+
+            timerUpdateTime.Elapsed += TimerUpdateTimeMethod;
+            timerUpdateTime.AutoReset = true;
+            timerUpdateTime.Enabled = true;
+
+            ReplyDelegate = ResponseData;
+        }
+
+        private void TimerUpdateTimeMethod(object sender, ElapsedEventArgs e)
+        {
+            ThreadSafe(delegate
+            {
+                SyncClock();
+            });
         }
         private void TimerUpdateClientMethod(object sender, ElapsedEventArgs e)
         {
-            PingReply pr = new Ping().Send("172.22.100.13", 5000);
-            if (pr.Status == IPStatus.Success)
+            ThreadSafe(delegate
             {
-                try
+                PingReply pr = new Ping().Send("172.22.100.13", 5000);
+                if (pr.Status == IPStatus.Success)
                 {
-                    string latestVersionPath = Path.Combine(updateServerPath, "version.txt");
-                    string latestVersionStr = File.ReadAllText(latestVersionPath);
-
-                    Version latestVersion = new Version(latestVersionStr);
-                    Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
-                    if (latestVersion > currentVersion)
+                    try
                     {
-                        ProcessStartInfo psi = new ProcessStartInfo
+                        string latestVersionPath = Path.Combine(updateServerPath, "version.txt");
+                        string latestVersionStr = File.ReadAllText(latestVersionPath);
+
+                        Version latestVersion = new Version(latestVersionStr);
+                        Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+                        if (latestVersion > currentVersion)
                         {
-                            FileName = "UpdaterHelper.exe",
-                            CreateNoWindow = true,
-                            UseShellExecute = false,
-                            RedirectStandardOutput = false,
-                            RedirectStandardError = false
-                        };
-
-                        Process updaterProcess = new Process { StartInfo = psi };
-                        updaterProcess.Start();
-
-                        Invoke(new Action(() =>
+                            ProcessStartInfo psi = new ProcessStartInfo
                             {
-                                notifyIcon1.Dispose();
-                                closeModel();
-                                timersStop();
-                                Application.Exit();
-                                Dispose();
-                            }
-                        ));
+                                FileName = "UpdaterHelper.exe",
+                                CreateNoWindow = true,
+                                UseShellExecute = false,
+                                RedirectStandardOutput = false,
+                                RedirectStandardError = false
+                            };
+
+                            Process updaterProcess = new Process { StartInfo = psi };
+                            updaterProcess.Start();
+
+                            Invoke(new Action(() =>
+                                {
+                                    notifyIcon1.Dispose();
+                                    closeModel();
+                                    timersStop();
+                                    tool.destroyThread();
+                                    Application.Exit();
+                                    Dispose();
+                                }
+                            ));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
                     }
                 }
-                catch (Exception ex)
-                {
-                }
-            }
+            });
         }
         public float GetTemperature()
         {
@@ -223,7 +237,7 @@ namespace 温度监测程序
             });
         }
         //检查版本号
-        
+
         private void ThreadSafe(MethodInvoker method)
         {
             try
@@ -374,10 +388,9 @@ namespace 温度监测程序
             {
                 closeModel();
                 timersStop();
-                threadUpdate.Abort();
                 // tool.closurePort();
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
             }
             Application.Exit();
@@ -391,7 +404,8 @@ namespace 温度监测程序
         {
             if (button1.Text == "停止")
             {
-                timersStop();
+                timerReadData.Enabled = false;
+                timerSendData.Enabled = false;
                 tool.closurePort();
                 button1.Text = "开始";
                 labelHumidityCH1.Text = "0.0";
@@ -407,7 +421,6 @@ namespace 温度监测程序
         private void Form1_Load(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Minimized;
-            threadUpdate.Start();
 
             Form2 form2 = new Form2(this);
             form2.Show();
@@ -423,6 +436,7 @@ namespace 温度监测程序
             timerUpdateClient.Enabled = false;
             timerReadData.Enabled = false;
             timerSendData.Enabled = false;
+            timerUpdateTime.Enabled = false;
         }
         public void closeModel()
         {
@@ -508,6 +522,111 @@ namespace 温度监测程序
             {
                 File.Delete(targetFileName);
                 File.Move(sourceFileName, targetFileName);
+            }
+        }
+        private void SyncClock()
+        {
+            PingReply pr = new Ping().Send(ntpServer, 5000);
+            if (pr.Status == IPStatus.Success)
+            {
+                try
+                {
+                    DateTime remoteTime = GetRemoteTime();
+                    if (Math.Abs((remoteTime - DateTime.Now).TotalSeconds) > 5)
+                    {
+                        SyncLocalTime(remoteTime);
+                    }
+                }
+                catch (Exception ex)
+                {
+                }
+            }
+        }
+
+        private DateTime GetRemoteTime()
+        {
+            try
+            {
+                using (UdpClient udpClient = new UdpClient(ntpServer, ntpPort))
+                {
+                    udpClient.Client.ReceiveTimeout = 15000;
+                    byte[] requestData = new byte[48]; // NTP 数据包的标准大小是 48 字节
+                    requestData[0] = 0x1B; // NTP请求头
+
+                    udpClient.Send(requestData, requestData.Length);
+
+                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+                    byte[] responseData;
+                    try
+                    {
+                        responseData = udpClient.Receive(ref endPoint);
+                    }
+                    catch (SocketException ex)
+                    {
+                        return DateTime.Now;
+                    }
+
+                    if (responseData.Length < 48)
+                    {
+                        return DateTime.Now;
+                    }
+
+                    // 解析NTP时间戳
+                    byte[] secondsSince1900Bytes = new byte[4];
+                    Array.Copy(responseData, 40, secondsSince1900Bytes, 0, 4);
+                    Array.Reverse(secondsSince1900Bytes); // 转换为大端字节序
+                    ulong intPart = BitConverter.ToUInt32(secondsSince1900Bytes, 0);
+
+                    byte[] fractionOfSecondBytes = new byte[4];
+                    Array.Copy(responseData, 44, fractionOfSecondBytes, 0, 4);
+                    Array.Reverse(fractionOfSecondBytes); // 转换为大端字节序
+                    ulong fracPart = BitConverter.ToUInt32(fractionOfSecondBytes, 0);
+
+                    DateTime ntpDateTime = new DateTime(1900, 1, 1).AddSeconds(intPart);
+                    ntpDateTime = ntpDateTime.AddTicks((long)((fracPart * TimeSpan.TicksPerSecond) / 0xFFFFFFFFUL));
+
+                    return ntpDateTime.ToLocalTime();
+                }
+            }
+            catch (Exception ex)
+            {
+                return DateTime.Now;
+            }
+        }
+
+        private void SyncLocalTime(DateTime newTime)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/C date {newTime:yyyy-MM-dd}",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                var startInfo1 = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/C time {newTime:HH:mm:ss}",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (var process = Process.Start(startInfo))
+                {
+                    process.WaitForExit();
+                }
+                using (var process = Process.Start(startInfo1))
+                {
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
             }
         }
     }
