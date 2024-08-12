@@ -103,7 +103,6 @@ namespace AGM监测程序
             threadMonitorAGM = new Thread(threadMonitorAGMMethod);
             threadMonitorAGM.Start();
         }
-
         private void threadMonitorAGMMethod()
         {
             while (true)
@@ -121,7 +120,6 @@ namespace AGM监测程序
                 Thread.Sleep(500);
             }
         }
-
         private void startAGM()
         {
             try
@@ -142,7 +140,6 @@ namespace AGM监测程序
                 }
             }
         }
-
         private void TimerUpdateTimeMethod(object sender, ElapsedEventArgs e)
         {
             ThreadSafe(delegate
@@ -287,7 +284,6 @@ namespace AGM监测程序
             });
         }
         //检查版本号
-
         private void ThreadSafe(MethodInvoker method)
         {
             try
@@ -592,7 +588,7 @@ namespace AGM监测程序
                 }
             }
         }
-
+        //时钟同步
         private DateTime GetRemoteTime()
         {
             try
@@ -643,7 +639,6 @@ namespace AGM监测程序
                 return DateTime.Now;
             }
         }
-
         private void SyncLocalTime(DateTime newTime)
         {
             try
