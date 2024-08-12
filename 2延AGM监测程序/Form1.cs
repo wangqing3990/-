@@ -1,4 +1,7 @@
-﻿using System;
+﻿using AGM监测程序.MonitoringSystem.common;
+using AGM监测程序.MonitoringSystem.pojo;
+using Microsoft.Win32;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -12,9 +15,6 @@ using System.Threading;
 using System.Timers;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using AGM监测程序.MonitoringSystem.common;
-using AGM监测程序.MonitoringSystem.pojo;
-using Microsoft.Win32;
 
 namespace AGM监测程序
 {
@@ -29,10 +29,12 @@ namespace AGM监测程序
         private System.Timers.Timer timerSendData = new System.Timers.Timer(2000);
         private System.Timers.Timer timerUpdateClient = new System.Timers.Timer(5000);
         private System.Timers.Timer timerUpdateTime = new System.Timers.Timer(10000);
-        private System.Timers.Timer timerMonitorTime = new System.Timers.Timer(60000);
+        private System.Timers.Timer timerMonitorAGM = new System.Timers.Timer(60000);
+        private Thread threadUpdateClient;
+        private Thread threadMonitorAGM;
         private const string ntpServer = "172.22.100.13";
         private const int ntpPort = 123;
-        private Thread threadMonitorAGM;
+
         public delegateReply ReplyDelegate;
         private string portName;
         private int baudRate;
@@ -53,7 +55,6 @@ namespace AGM监测程序
         private Chart chart2;
         private Point mouseDownLocation;
         private string updateServerPath = @"\\172.22.100.13\2ydata\THupdate\";
-
 
         public Form1()
         {
@@ -83,22 +84,28 @@ namespace AGM监测程序
             timerSendData.Elapsed += TimerSendMethod;
             timerSendData.AutoReset = true;
 
-            timerUpdateClient.Elapsed += TimerUpdateClientMethod;
-            timerUpdateClient.AutoReset = true;
-            timerUpdateClient.Enabled = true;
-
-            timerUpdateTime.Elapsed += TimerUpdateTimeMethod;
+            timerUpdateTime.Elapsed += (s, e) => SyncClock();
             timerUpdateTime.AutoReset = true;
             timerUpdateTime.Enabled = true;
 
-            timerMonitorTime.Elapsed += timerMonitorTimeMethod;
-            timerMonitorTime.AutoReset = false;
-            timerMonitorTime.Enabled = true;
+            timerMonitorAGM.Elapsed += timerMonitorAGMMethod;
+            timerMonitorAGM.AutoReset = false;
+            timerMonitorAGM.Enabled = true;
+
+            threadUpdateClient = new Thread(threadUpdateClientMethod);
+            threadUpdateClient.Start();
 
             ReplyDelegate = ResponseData;
         }
 
-        private void timerMonitorTimeMethod(object sender, ElapsedEventArgs e)
+        private void threadUpdateClientMethod()
+        {
+            timerUpdateClient.Elapsed += TimerUpdateClientMethod;
+            timerUpdateClient.AutoReset = true;
+            timerUpdateClient.Enabled = true;
+        }
+
+        private void timerMonitorAGMMethod(object sender, ElapsedEventArgs e)
         {
             threadMonitorAGM = new Thread(threadMonitorAGMMethod);
             threadMonitorAGM.Start();
@@ -107,12 +114,12 @@ namespace AGM监测程序
         {
             while (true)
             {
-                if (Process.GetProcessesByName("AGM").Length==0)
+                if (Process.GetProcessesByName("AGM").Length == 0)
                 {
                     DialogResult result = MessageBox.Show("检测到AGM程序退出，是否重启程序？按Enter确认", "提示",
                         MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1,
                         MessageBoxOptions.DefaultDesktopOnly);
-                    if (result==DialogResult.OK)
+                    if (result == DialogResult.OK)
                     {
                         startAGM();
                     }
@@ -140,59 +147,50 @@ namespace AGM监测程序
                 }
             }
         }
-        private void TimerUpdateTimeMethod(object sender, ElapsedEventArgs e)
-        {
-            ThreadSafe(delegate
-            {
-                SyncClock();
-            });
-        }
         private void TimerUpdateClientMethod(object sender, ElapsedEventArgs e)
         {
-            ThreadSafe(delegate
+            PingReply pr = new Ping().Send("172.22.100.13", 5000);
+            if (pr.Status == IPStatus.Success)
             {
-                PingReply pr = new Ping().Send("172.22.100.13", 5000);
-                if (pr.Status == IPStatus.Success)
+                try
                 {
-                    try
+                    string latestVersionPath = Path.Combine(updateServerPath, "version.txt");
+                    string latestVersionStr = File.ReadAllText(latestVersionPath);
+
+                    Version latestVersion = new Version(latestVersionStr);
+                    Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+                    if (latestVersion > currentVersion)
                     {
-                        string latestVersionPath = Path.Combine(updateServerPath, "version.txt");
-                        string latestVersionStr = File.ReadAllText(latestVersionPath);
-
-                        Version latestVersion = new Version(latestVersionStr);
-                        Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
-                        if (latestVersion > currentVersion)
+                        ProcessStartInfo psi = new ProcessStartInfo
                         {
-                            ProcessStartInfo psi = new ProcessStartInfo
+                            FileName = "UpdaterHelper.exe",
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            RedirectStandardOutput = false,
+                            RedirectStandardError = false
+                        };
+
+                        Process updaterProcess = new Process { StartInfo = psi };
+                        updaterProcess.Start();
+
+                        Invoke(new Action(() =>
                             {
-                                FileName = "UpdaterHelper.exe",
-                                CreateNoWindow = true,
-                                UseShellExecute = false,
-                                RedirectStandardOutput = false,
-                                RedirectStandardError = false
-                            };
-
-                            Process updaterProcess = new Process { StartInfo = psi };
-                            updaterProcess.Start();
-
-                            Invoke(new Action(() =>
-                                {
-                                    notifyIcon1.Dispose();
-                                    threadMonitorAGM.Abort();
-                                    closeModel();
-                                    timersStop();
-                                    Application.Exit();
-                                    Dispose();
-                                }
-                            ));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
+                                notifyIcon1.Dispose();
+                                threadMonitorAGM.Abort();
+                                threadUpdateClient.Abort();
+                                closeModel();
+                                timersStop();
+                                Application.Exit();
+                                Dispose();
+                            }
+                        ));
                     }
                 }
-            });
+                catch (Exception ex)
+                {
+                }
+            }
         }
         public float GetTemperature()
         {
