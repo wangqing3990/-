@@ -1,4 +1,4 @@
-﻿namespace 温度监测程序
+﻿namespace AGM监测程序
 {
     partial class Form2
     {

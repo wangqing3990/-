@@ -1,9 +1,8 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace 温度监测程序
+namespace AGM监测程序
 {
     public partial class Form2 : Form
     {

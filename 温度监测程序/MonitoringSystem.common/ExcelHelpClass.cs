@@ -6,7 +6,7 @@ using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
-namespace 温度监测程序.MonitoringSystem.common
+namespace AGM监测程序.MonitoringSystem.common
 {
     public class ExcelHelpClass
     {

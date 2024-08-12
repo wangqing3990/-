@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace 温度监测程序.Properties {
+namespace AGM监测程序.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

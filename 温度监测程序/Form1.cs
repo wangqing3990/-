@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -13,10 +12,11 @@ using System.Threading;
 using System.Timers;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using 温度监测程序.MonitoringSystem.common;
-using 温度监测程序.MonitoringSystem.pojo;
+using AGM监测程序.MonitoringSystem.common;
+using AGM监测程序.MonitoringSystem.pojo;
+using Microsoft.Win32;
 
-namespace 温度监测程序
+namespace AGM监测程序
 {
     public partial class Form1 : Form
     {

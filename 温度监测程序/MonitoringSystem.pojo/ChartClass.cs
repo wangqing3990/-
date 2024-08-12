@@ -1,6 +1,6 @@
 ﻿using System.Windows.Forms.DataVisualization.Charting;
 
-namespace 温度监测程序.MonitoringSystem.pojo
+namespace AGM监测程序.MonitoringSystem.pojo
 {
     internal class ChartClass
     {

@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
 
-namespace 温度监测程序.MonitoringSystem.common
+namespace AGM监测程序.MonitoringSystem.common
 {
     internal class ModbusDataExhibit
     {

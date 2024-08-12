@@ -1,4 +1,4 @@
-﻿namespace 温度监测程序.MonitoringSystem.pojo
+﻿namespace AGM监测程序.MonitoringSystem.pojo
 {
     public class ModbusClass
     {

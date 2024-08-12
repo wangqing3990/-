@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{224CB3CE-5F47-4522-9E5E-8A8F8F12B570}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>温度监测程序</RootNamespace>
-    <AssemblyName>温度监测程序</AssemblyName>
+    <RootNamespace>AGM监测程序</RootNamespace>
+    <AssemblyName>2延AGM监测程序</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -96,6 +96,7 @@
     <Compile Include="MonitoringSystem.common\ExcelHelpClass.cs" />
     <Compile Include="MonitoringSystem.common\ModbusDataExhibit.cs" />
     <Compile Include="MonitoringSystem.common\ModbusTools.cs" />
+    <Compile Include="MonitoringSystem.common\NetworkInfo.cs" />
     <Compile Include="MonitoringSystem.pojo\ChartClass.cs" />
     <Compile Include="MonitoringSystem.pojo\ModbusClass.cs" />
     <Compile Include="Program.cs" />

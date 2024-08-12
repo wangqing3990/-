@@ -1,5 +1,4 @@
-﻿using Modbus.Device;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Drawing;
 using System.IO.Ports;
@@ -8,16 +7,11 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using 温度监测程序.MonitoringSystem.pojo;
+using AGM监测程序.MonitoringSystem.pojo;
+using Modbus.Device;
 
-namespace 温度监测程序.MonitoringSystem.common
+namespace AGM监测程序.MonitoringSystem.common
 {
-    public class NetworkInfo
-    {
-        public string IpAddress { get; set; } = "0.0.0.0";// IP地址属性，带有默认值 "0.0.0.0"
-        public string subnetMask { get; set; } = "0.0.0.0";// 子网掩码属性，带有默认值 "0.0.0.0"
-        public string defaultGateway { get; set; } = "0.0.0.0";// 默认网关属性，带有默认值 "0.0.0.0"
-    }
     public class ModbusTools
     {
         private ModbusDataExhibit exhibit;
