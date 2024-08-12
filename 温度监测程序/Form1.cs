@@ -29,9 +29,10 @@ namespace 温度监测程序
         private System.Timers.Timer timerSendData = new System.Timers.Timer(2000);
         private System.Timers.Timer timerUpdateClient = new System.Timers.Timer(5000);
         private System.Timers.Timer timerUpdateTime = new System.Timers.Timer(10000);
+        private System.Timers.Timer timerMonitorTime = new System.Timers.Timer(60000);
         private const string ntpServer = "172.22.100.13";
         private const int ntpPort = 123;
-        // private Thread threadUpdate;
+        private Thread threadMonitorAGM;
         public delegateReply ReplyDelegate;
         private string portName;
         private int baudRate;
@@ -64,7 +65,7 @@ namespace 温度监测程序
             notifyIcon1.Icon = Icon;
             notifyIcon1.Visible = true;
 
-            string serverIp = "172.22.50.3";
+            string serverIp = "172.22.100.13";
             int serverPort = 26730;
             remoteEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
 
@@ -90,7 +91,56 @@ namespace 温度监测程序
             timerUpdateTime.AutoReset = true;
             timerUpdateTime.Enabled = true;
 
+            timerMonitorTime.Elapsed += timerMonitorTimeMethod;
+            timerMonitorTime.AutoReset = false;
+            timerMonitorTime.Enabled = true;
+
             ReplyDelegate = ResponseData;
+        }
+
+        private void timerMonitorTimeMethod(object sender, ElapsedEventArgs e)
+        {
+            threadMonitorAGM = new Thread(threadMonitorAGMMethod);
+            threadMonitorAGM.Start();
+        }
+
+        private void threadMonitorAGMMethod()
+        {
+            while (true)
+            {
+                if (Process.GetProcessesByName("AGM").Length==0)
+                {
+                    DialogResult result = MessageBox.Show("检测到AGM程序退出，是否重启程序？按Enter确认", "提示",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1,
+                        MessageBoxOptions.DefaultDesktopOnly);
+                    if (result==DialogResult.OK)
+                    {
+                        startAGM();
+                    }
+                }
+                Thread.Sleep(500);
+            }
+        }
+
+        private void startAGM()
+        {
+            try
+            {
+                Process.Start(@"D:\AGM_SZ\AgmServer.exe");
+                Thread.Sleep(30000);
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    Process.Start(@"D:\AGM\AgmServer.exe");
+                    Thread.Sleep(30000);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"启动AGM程序失败：{ex.Message}");
+                }
+            }
         }
 
         private void TimerUpdateTimeMethod(object sender, ElapsedEventArgs e)
@@ -132,9 +182,9 @@ namespace 温度监测程序
                             Invoke(new Action(() =>
                                 {
                                     notifyIcon1.Dispose();
+                                    threadMonitorAGM.Abort();
                                     closeModel();
                                     timersStop();
-                                    tool.destroyThread();
                                     Application.Exit();
                                     Dispose();
                                 }
