@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.35026.233
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2延AGM监测程序", "温度监测程序\2延AGM监测程序.csproj", "{224CB3CE-5F47-4522-9E5E-8A8F8F12B570}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2延AGM监测程序", "2延AGM监测程序\2延AGM监测程序.csproj", "{224CB3CE-5F47-4522-9E5E-8A8F8F12B570}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,6 +20,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {1B41C9FE-C6C1-4B8E-9F6A-CDDE9311C0C0}
+		SolutionGuid = {0A5F1A6B-85B7-46DC-A615-69F8BEC15D6D}
 	EndGlobalSection
 EndGlobal
