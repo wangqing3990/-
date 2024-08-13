@@ -27,7 +27,7 @@ namespace AGM监测程序
         private System.Timers.Timer timerCom = new System.Timers.Timer(2000.0);
         private System.Timers.Timer timerSaveData = new System.Timers.Timer();
         private System.Timers.Timer timerSendData = new System.Timers.Timer(2000);
-        private System.Timers.Timer timerUpdateClient = new System.Timers.Timer(5000);
+        private System.Timers.Timer timerUpdateClient = new System.Timers.Timer(30000);
         private System.Timers.Timer timerUpdateTime = new System.Timers.Timer(10000);
         private System.Timers.Timer timerMonitorAGM = new System.Timers.Timer(60000);
         private Thread threadUpdateClient;
@@ -48,7 +48,6 @@ namespace AGM监测程序
         private bool readDataBox = true;
         private bool adjusting = true;
         private byte slaveAddress = 1;
-        private ExcelHelpClass excelHelp;
         private float fTemperature;
         private float fHumidity;
         private Chart chart1;
@@ -72,7 +71,7 @@ namespace AGM监测程序
 
             tool = new ModbusTools();
             exhibit = new ModbusDataExhibit();
-            excelHelp = new ExcelHelpClass();
+            // excelHelp = new ExcelHelpClass();
             chartData1 = new ChartClass(21);
             chart1 = new Chart();
             chartData2 = new ChartClass(21);
@@ -164,7 +163,7 @@ namespace AGM监测程序
                     {
                         ProcessStartInfo psi = new ProcessStartInfo
                         {
-                            FileName = "UpdaterHelper.exe",
+                            FileName = "THUpdaterHelper.exe",
                             CreateNoWindow = true,
                             UseShellExecute = false,
                             RedirectStandardOutput = false,
