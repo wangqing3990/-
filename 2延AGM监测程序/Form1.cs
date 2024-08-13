@@ -228,7 +228,14 @@ namespace AGM监测程序
             ckCbx.Items.AddRange(ports);
             if (ports.Length > 0)
             {
-                ckCbx.SelectedIndex = 0;
+                if (ckCbx.Items.Contains("COM15"))
+                {
+                    ckCbx.SelectedItem = "COM15";
+                }
+                else
+                {
+                    ckCbx.SelectedIndex = 0;
+                }
             }
         }
         public void readMethod()
